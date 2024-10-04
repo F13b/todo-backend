@@ -15,11 +15,11 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 type UserData = { username: string; password: string };
 type TaskData = {
-  title: string;
+  title?: string;
   description?: string;
-  deadline: string;
-  userUsername: string;
-  priority: number;
+  deadline?: string;
+  userUsername?: string;
+  priority?: number;
 };
 
 @Controller('api')
@@ -28,6 +28,9 @@ export class AppController {
     private readonly userService: UserService,
     private readonly taskService: TaskService,
   ) {}
+
+  // Блок роутов для взаимодействия с делами
+  // CRUD роуты для задач
 
   @ApiTags('Tasks')
   @ApiOperation({ summary: 'Returns the task with specified id' })
@@ -42,6 +45,7 @@ export class AppController {
     return this.taskService.task({ id: Number(id) });
   }
 
+  // Метод возвращает все "опубликованные" задачи (которые не являются черновиками)
   @ApiTags('Tasks')
   @ApiOperation({ summary: 'Returns all published tasks' })
   @Get('feed')
@@ -51,6 +55,7 @@ export class AppController {
     });
   }
 
+  // Метод возвращает все задачи, которые содержат в своем заголовке или содержании введенную подстроку
   @ApiTags('Tasks')
   @ApiOperation({
     summary:
@@ -79,6 +84,7 @@ export class AppController {
     });
   }
 
+  // Метод возвращает созданную задачу
   @ApiTags('Tasks')
   @ApiOperation({ summary: 'Adds a new task' })
   @ApiParam({
@@ -123,6 +129,7 @@ export class AppController {
     });
   }
 
+  // "Публикует" выбранную задачу
   @ApiTags('Tasks')
   @ApiOperation({ summary: 'Updates task with specified id' })
   @ApiParam({ name: 'id', required: true, description: 'Task identifier' })
@@ -134,6 +141,23 @@ export class AppController {
     });
   }
 
+  // Метод обновляет данные задачи
+  @Put('task/update/:id')
+  async updateTask(
+    @Body() taskData: TaskData,
+    @Param('id') id: string,
+  ): Promise<TaskModel> {
+    return this.taskService.updateTask({
+      where: { id: Number(id) },
+      data: {
+        title: taskData.title,
+        description: taskData.description,
+        deadline: taskData.deadline,
+      },
+    });
+  }
+
+  // Удаляет выбранную задачу
   @ApiTags('Tasks')
   @ApiOperation({ summary: 'Deletes a task with the specified id' })
   @ApiParam({ name: 'id', required: true, description: 'Task identifier' })
@@ -142,12 +166,42 @@ export class AppController {
     return this.taskService.removeTask({ id: Number(id) });
   }
 
+  // Блок роутов для взаимодействия с пользователем
+
+  // Создает нового пользователя
   @ApiTags('Users')
   @ApiOperation({ summary: 'Creates a new user with the specified data' })
   @ApiParam({ name: 'username', required: true, description: 'Username' })
   @ApiParam({ name: 'password', required: true, description: 'User password' })
-  @Post('user')
+  @Post('user/create')
   async registerUser(@Body() userData: UserData): Promise<UserModel> {
     return this.userService.createUser(userData);
+  }
+
+  // Метод возвращает данные пользователя по id
+  @ApiTags('Users')
+  @Get('user/:id')
+  async getUser(@Param('id') id: string): Promise<UserModel> {
+    return this.userService.user({ id: Number(id) });
+  }
+
+  // Обновляет данные пользователя
+  @ApiTags('Users')
+  @Put('user/update/:id')
+  async updateUser(
+    @Body() userData: UserData,
+    @Param('id') id: string,
+  ): Promise<UserModel> {
+    return this.userService.updateUser({
+      where: { id: Number(id) },
+      data: userData,
+    });
+  }
+
+  // Удаляет выбранного пользователя
+  @ApiTags('Users')
+  @Delete('user/delete/:id')
+  async removeUser(@Param('id') id: string): Promise<UserModel> {
+    return this.userService.removeUser({ id: Number(id) });
   }
 }
